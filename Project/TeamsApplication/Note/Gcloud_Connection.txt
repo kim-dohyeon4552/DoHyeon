@@ -1,0 +1,158 @@
+라즈베리파이(리눅스 데비안) Cloud sql 연동
+
+sudo apt-get update
+sudo apt-get upgrade 
+최신으로 업그레이드 및 업데이트
+
+wget https://files.phpmyadmin.net/phpMyAdmin/4.6.3/phpMyAdmin-4.6.3-all-languages.tar.bz2
+
+phpmysdmin 다운
+
+mkdir phpMyAdmin
+압축 해제할 파일을 다운로드
+tar -xvf phpMyAdmin-4.6.3-all-languages.tar.bz2 -C phpMyAdmin --strip-components=1
+압축해제
+
+$HOME/pi 파일에
+app.yaml, config.inc.php, php.ini 총 3개의 파일을 만든다
+//app.yaml  
+
+service: default
+runtime: php55
+api_version: 1
+
+handlers:
+
+- url: /(.+\.(ico|jpg|png|gif))$
+  static_files: \1
+  upload: (.+\.(ico|jpg|png|gif))$
+  application_readable: true
+
+- url: /(.+\.(htm|html|css|js))$
+  static_files: \1
+  upload: (.+\.(htm|html|css|js))$
+  application_readable: true
+
+- url: /(.+\.php)$
+  script: \1
+  login: admin
+
+- url: /.*
+  script: index.php
+  login: admin
+
+
+//config.inc.php
+<?php
+/**
+ * Copyright 2016 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/*
+ * This is needed for cookie based authentication to encrypt password in
+ * cookie
+ * http://www.question-defense.com/tools/phpmyadmin-blowfish-secret-generator
+ */
+$cfg['blowfish_secret'] = '{{your_secret}}'; /* YOU MUST FILL IN THIS FOR COOKIE AUTH! */
+
+/*
+ * Servers configuration
+ */
+$i = 0;
+
+// Change this to use the project and instance that you've created.
+$host = '/cloudsql/{{your_connection_string}}';
+$type = 'socket';
+
+/*
+* First server
+*/
+$i++;
+/* Authentication type */
+$cfg['Servers'][$i]['auth_type'] = 'cookie';
+/* Server parameters */
+$cfg['Servers'][$i]['socket'] = $host;
+$cfg['Servers'][$i]['connect_type'] = $type;
+$cfg['Servers'][$i]['compress'] = false;
+/* Select mysql if your server does not have mysqli */
+$cfg['Servers'][$i]['extension'] = 'mysqli';
+$cfg['Servers'][$i]['AllowNoPassword'] = true;
+/*
+ * End of servers configuration
+ */
+
+/*
+ * Directories for saving/loading files from server
+ */
+$cfg['UploadDir'] = '';
+$cfg['SaveDir'] = '';
+
+/*
+* Other settings
+*/
+$cfg['PmaNoRelation_DisableWarning'] = true;
+$cfg['ExecTimeLimit'] = 60;
+$cfg['CheckConfigurationPermissions'] = false;
+
+
+다음 파일을 만들고 {{your_secret}} 비밀번호를 넣는다.
+
+https://www.question-defense.com/tools/phpmyadmin-blowfish-secret-generator
+phpMyAdmin 비밀번호 생성기를 이용하여 넣는다.
+
+그리고 {{your_connection_string}} 인스턴트 연결 이름을 넣어준다.
+
+구글 클라우드를 설치하기 위해 다음과 같은 환경변수를 입력한다
+
+export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
+
+echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+
+curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+
+
+gcloud components update 를 이용해 gcloud 구성요소를 업데이트 시켜준다
+
+위 명령어가 먹히지 않을 경우
+  sudo apt-get update && sudo apt-get install google-cloud-sdkgl
+   google-cloud-sdk를 다운후
+   sudo apt-get install로 집접 구성요소를 다운해준다
+sudo apt-get install google-cloud-sdk-app-engine-python
+sudo apt-get install google-cloud-sdk-app-engine-python-extras
+sudo apt-get install google-cloud-sdk-app-engine-java
+sudo apt-get install google-cloud-sdk-app-engine-go
+sudo apt-get install google-cloud-sdk-datalab
+sudo apt-get install google-cloud-sdk-datastore-emulator
+sudo apt-get install google-cloud-sdk-pubsub-emulator
+sudo apt-get install google-cloud-sdk-cbt
+sudo apt-get install google-cloud-sdk-cloud-build-local
+sudo apt-get install google-cloud-sdk-bigtable-emulator
+  
+다운로드 완료후 
+gcloud app delpoy 
+하면 끝이난다
+
+----
+gcloud 사용
+
+gcloud init 으로 초기화 시켜주고
+
+gcloud config set project [클라우드 프로젝트 id]
+gcloud betasql connect [CloudSQL 인스턴스이름] --user=root
+하면 클라우드 sql접속이 된다.
+
+
+
+
+
